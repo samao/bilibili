@@ -11,7 +11,7 @@ package
 {
 	import flash.external.ExternalInterface;
 	
-	public final class LogAcfun
+	public final class Log
 	{
 		/**
 		 * 数字越大信息越多，0只输出error，1增加warn，2增加info，3增加log，4增加debug
@@ -24,7 +24,7 @@ package
 		
 		private static const LEVEL_TYPE:Array = ["DEBUG","LOG","INFO","WARN","ERROR"];
 		
-		public function LogAcfun()
+		public function Log()
 		{
 			
 		}
@@ -57,7 +57,7 @@ package
 		private static function out(type:String,...value):void
 		{
 			var t:Date = new Date();
-			var format:String = "";
+			var format:String = value.join(",");
 			
 			if(ExternalInterface.available)
 			{

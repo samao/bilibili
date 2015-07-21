@@ -13,114 +13,91 @@
 			
 			protected function application1_applicationCompleteHandler(event:FlexEvent):void
 			{
-			/*	this.addEventListener(Event.ADDED_TO_STAGE,onAdded);
-				trace("LogAcfun");
-			}
-			protected function onAdded(event:Event):void
-			{*/
-				LogAcfun.useTracer = true;
-				LogAcfun.info("onAdded",this.url);
 				try
 				{
+					Log.level =4;
+					Log.useTracer = true;
+					Log.info("onAdded",this.url);
+						
+					flash.system.Security.allowDomain("*");
+					flash.system.Security.allowInsecureDomain("*");
 					
-				flash.system.Security.allowDomain("*");
-				flash.system.Security.allowInsecureDomain("*");
-				
-				stage.scaleMode = StageScaleMode.NO_SCALE;
-				stage.align = StageAlign.TOP_LEFT;
-				var pbox:Sprite = new Sprite();
-				
-				var lbox:Sprite = new Sprite();
-				stage.addEventListener(Event.ADDED,function(e:Event):void
-				{
-					return;
-					//trace("CHANI:",e.target)
-					if(e.target.hasOwnProperty("name")&&e.target.name.indexOf("MiniPlayerFlex")==0)
+					stage.scaleMode = StageScaleMode.NO_SCALE;
+					stage.align = StageAlign.TOP_LEFT;
+					var pbox:Sprite = new Sprite();
+					
+					var lbox:Sprite = new Sprite();
+					var url:String = "http://static.hdslb.com/miniloader.swf?";//"http://1.avfunapi.sinaapp.com/play_0.swf?"//
+					
+					if(stage.loaderInfo.parameters!=null&&stage.loaderInfo.parameters.length>0)
 					{
-						stage.removeEventListener(Event.ADDED,arguments.callee);
-						player = e.target["playerContainer"]["player"];
-						player.addEventListener("jwplayerPlayerState",onjwplayerPlayerState);
-						player.addEventListener("jwplayerMediaTime",ontimeUpdate);
-						loader.width = stage.stageWidth;
-						loader.height = stage.stageHeight;
-					}
-				});
-				var url:String = "http://static.hdslb.com/miniloader.swf?";//"http://1.avfunapi.sinaapp.com/play_0.swf?"//
-				
-				if(stage.loaderInfo.parameters!=null&&stage.loaderInfo.parameters.length>0)
-				{
-					for(var i:String in stage.loaderInfo.parameters)
-					{
-						url+=i+"="+stage.loaderInfo.parameters[i];
-					}
-				}else{
-					url+="cid=4052899&aid=2594889"
-				}
-				//url+="cid=4052899&aid=2594889"
-				LogAcfun.info("loading",url);
-				
-				var loader:Loader = new Loader();
-				loader.contentLoaderInfo.addEventListener(Event.COMPLETE,function(e:Event):void
-				{
-					lbox.addChild(loader);
-					var id:int = setInterval(function():void
-					{
-						var has:Boolean = loader.contentLoaderInfo.applicationDomain.hasDefinition("tv.bilibili.script.CommentScriptFactory");
-						if(has)
+						for(var i:String in stage.loaderInfo.parameters)
 						{
-							var cls:Object = loader.contentLoaderInfo.applicationDomain.getDefinition("tv.bilibili.script.CommentScriptFactory");
+							url+=i+"="+stage.loaderInfo.parameters[i];
+						}
+					}else{
+						url+="cid=4052899&aid=2594889"
+					}
+					
+					Log.info("loading",url);
+					
+					var loader:Loader = new Loader();
+					var ins:Object = null;
+					loader.contentLoaderInfo.addEventListener(Event.COMPLETE,function(e:Event):void
+					{
+						lbox.addChild(loader);
+						var id:int = setInterval(function():void
+						{
 							try{
-								var ie:Object = cls["getInstance"]();
+								var has:Boolean = loader.contentLoaderInfo.applicationDomain.hasDefinition("tv.bilibili.script.CommentScriptFactory");
+								if(has)
+								{
+									var cls:Object = loader.contentLoaderInfo.applicationDomain.getDefinition("tv.bilibili.script.CommentScriptFactory");
+									ins = cls["getInstance"]();
+									clearInterval(id);
+									setTimeout(getTime,200);
+								}
 							}catch(er:Error){
-								LogAcfun.info(er);
+								Log.info(er);
 								return;
 							}
-							clearInterval(id);
-							var ids:int = setInterval(getTime,1000,ie,ids);
-						}
-					},100);
-				});
-				
-				var getTime:Function = function(value:Object,id:int):void
-				{
-					if(value.player!=null)
+						},100);
+					});
+					
+					var getTime:Function = function():void
 					{
-						LogAcfun.info("当前播放时间：",value.player.state);
-						clearInterval(id);
-						player = value.player;
-						player.addEventListener("jwplayerPlayerState",onjwplayerPlayerState);
-						player.addEventListener("jwplayerMediaTime",ontimeUpdate);
+						if(ins.player!=null)
+						{
+							Log.info("当前播放时间：",ins.player.state);
+							player = ins.player;
+							player.addEventListener("jwplayerPlayerState",onjwplayerPlayerState);
+							player.addEventListener("jwplayerMediaTime",ontimeUpdate);
+							return;
+						}
+						setTimeout(getTime,200);
 					}
-					//callJS("timeUpdate",{"position":value.time,"duration":uint.MAX_VALUE});
-				}
-				loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR,function():void
-				{});
-				
-				stage.addChild(lbox);
-				var ldr:LoaderContext = new LoaderContext();
-				ldr.applicationDomain = new ApplicationDomain(ApplicationDomain.currentDomain);
-				//ldr.securityDomain = SecurityDomain.currentDomain
-				ldr.allowCodeImport = true;
-				//ldr.parameters = "cid=4052899&aid=2594889";
-				//ldr.allowLoadBytesCodeExecution = true;
-				loader.load(new URLRequest(url))//,ldr);
-				//lbox.visible = false;
-				//callJS("alert","nihao");
-				}catch(er:Error)
-				{
-					trace(er);
+					loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR,function():void
+					{});
+					
+					stage.addChild(lbox);
+					var ldr:LoaderContext = new LoaderContext();
+					ldr.applicationDomain = new ApplicationDomain(ApplicationDomain.currentDomain);
+					ldr.allowCodeImport = true;
+					loader.load(new URLRequest(url))//,ldr);
+				}catch(er:Error){
+					Log.info(er);
 				}
 			}
 			
 			private function ontimeUpdate(e:Event):void
 			{
-				LogAcfun.info("当前播放时间：",e["position"]);
+				Log.info("当前播放时间：",e["position"]);
 				callJS("timeUpdate",{"position":e["position"],"duration":e["duration"]});
 			}
 			
 			private function onjwplayerPlayerState(e:Event):void
 			{
-				LogAcfun.info("当前播放:",e["newstate"]);
+				Log.info("当前播放:",e["newstate"]);
 				callJS("playStatus",e["newstate"]);
 				//this.url
 			}
