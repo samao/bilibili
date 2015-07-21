@@ -9,6 +9,7 @@
 
 package
 {
+	import flash.display.DisplayObject;
 	import flash.display.Loader;
 	import flash.display.Sprite;
 	import flash.display.StageAlign;
@@ -53,17 +54,19 @@ package
 				this.mouseEnabled = lbox.mouseEnabled = false;
 				var url:String = "http://static.hdslb.com/miniloader.swf?";//"http://1.avfunapi.sinaapp.com/play_0.swf?"//
 				
-				if(stage.loaderInfo.parameters!=null&&stage.loaderInfo.parameters.length>0)
+				if(stage.loaderInfo.parameters!=null)
 				{
+					var a:Array = [];
 					for(var i:String in stage.loaderInfo.parameters)
 					{
-						url+=i+"="+stage.loaderInfo.parameters[i];
+						a.push(i+"="+stage.loaderInfo.parameters[i]);
 					}
+					url+=a.join("&");
 				}else{
 					url+="cid=4052899&aid=2594889"
 				}
-				
-				Log.info("loading",url);
+				//url+="cid=4052899&aid=2594889"
+				Log.info("loading",JSON.stringify(stage.loaderInfo.parameters),url);
 				
 				var loader:Loader = new Loader();
 				var ins:Object = null;
@@ -90,10 +93,24 @@ package
 				
 				var getTime:Function = function():void
 				{
-					if(ins.player!=null)
+					if(ins.player!=null&&ins.player["model"]&&ins.player["model"]["media"]&&ins.player["model"]["media"]["display"])
 					{
 						Log.info("当前播放时间：",ins.player.state);
 						player = ins.player;
+						var media:Object = player["model"]["media"];
+						var video:DisplayObject = player["model"]["media"]["display"] as DisplayObject;
+						var config:Object = player["model"]["config"];
+						var EXACTFIT:String = "exactfit";
+						var FILL:String = "fill";
+						var NONE:String = "none";
+						var UNIFORM:String = "uniform";
+						const DEFAULT:String = "default";
+						const _4_3:String = "4:3";
+						config.stretching = EXACTFIT;
+						//video.opaqueBackground = 0xFF0000;
+						addChild(video);
+						media["play"]();
+						media["resize"](stage.stageWidth,stage.stageHeight);
 						player.addEventListener("jwplayerPlayerState",onjwplayerPlayerState);
 						player.addEventListener("jwplayerMediaTime",ontimeUpdate);
 						return;
@@ -102,7 +119,7 @@ package
 				}
 				loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR,function():void
 				{});
-				
+				loader.visible = false;
 				stage.addChild(lbox);
 				var ldr:LoaderContext = new LoaderContext();
 				ldr.applicationDomain = new ApplicationDomain(ApplicationDomain.currentDomain);
