@@ -30,6 +30,7 @@ package
 	public class Blibli extends Sprite
 	{
 		private var player:IEventDispatcher;
+		private var media:Object 
 		
 		public function Blibli()
 		{
@@ -61,11 +62,15 @@ package
 					{
 						a.push(i+"="+stage.loaderInfo.parameters[i]);
 					}
-					url+=a.join("&");
-				}else{
-					url+="cid=4052899&aid=2594889"
+					if(a.length>0)
+					{
+						url+=a.join("&");
+					}else{
+						url+="cid=4052899&aid=2594889"
+					}
 				}
-				//url+="cid=4052899&aid=2594889"
+				//url+="cid=1402514&aid=970200"
+				
 				Log.info("loading",JSON.stringify(stage.loaderInfo.parameters),url);
 				
 				var loader:Loader = new Loader();
@@ -95,31 +100,36 @@ package
 				{
 					if(ins.player!=null&&ins.player["model"]&&ins.player["model"]["media"]&&ins.player["model"]["media"]["display"])
 					{
-						Log.info("当前播放时间：",ins.player.state);
 						player = ins.player;
-						var media:Object = player["model"]["media"];
+						media = player["model"]["media"];
 						var video:DisplayObject = player["model"]["media"]["display"] as DisplayObject;
 						var config:Object = player["model"]["config"];
-						var EXACTFIT:String = "exactfit";
-						var FILL:String = "fill";
-						var NONE:String = "none";
-						var UNIFORM:String = "uniform";
+						const EXACTFIT:String = "exactfit";
+						const FILL:String = "fill";
+						const NONE:String = "none";
+						const UNIFORM:String = "uniform";
 						const DEFAULT:String = "default";
 						const _4_3:String = "4:3";
 						config.stretching = EXACTFIT;
-						//video.opaqueBackground = 0xFF0000;
-						addChild(video);
+						video.opaqueBackground = 0xFF0000;
+						Log.info("播放器：",media.provider);
+						if(media.provider=="letv-swf")
+						{
+							video = video.parent.parent.parent.parent.parent.parent["player"];
+						}
+						stage.addChild(video);
 						media["play"]();
 						media["resize"](stage.stageWidth,stage.stageHeight);
 						player.addEventListener("jwplayerPlayerState",onjwplayerPlayerState);
 						player.addEventListener("jwplayerMediaTime",ontimeUpdate);
+						Log.info("getTime：",player,video,media);
 						return;
 					}
 					setTimeout(getTime,200);
 				}
 				loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR,function():void
 				{});
-				loader.visible = false;
+				lbox.visible = false;
 				stage.addChild(lbox);
 				var ldr:LoaderContext = new LoaderContext();
 				ldr.applicationDomain = new ApplicationDomain(ApplicationDomain.currentDomain);
@@ -140,7 +150,9 @@ package
 		{
 			Log.info("当前播放:",e["newstate"]);
 			callJS("playStatus",e["newstate"]);
-			//this.url
+			try{
+				//media["resize"](stage.stageWidth,stage.stageHeight);
+			}catch(er:Error){}
 		}
 		
 		private function callJS(name:String,args:* = null):void
