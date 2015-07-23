@@ -22,15 +22,24 @@ package
 	import flash.system.ApplicationDomain;
 	import flash.system.LoaderContext;
 	import flash.system.Security;
+	import flash.text.TextField;
+	import flash.ui.ContextMenu;
+	import flash.ui.ContextMenuItem;
 	import flash.utils.clearInterval;
+	import flash.utils.getQualifiedClassName;
 	import flash.utils.setInterval;
 	import flash.utils.setTimeout;
 	
+	import profile.Monitor;
 	
+	[SWF(backgroundColor="#343434")]
 	public class Blibli extends Sprite
 	{
 		private var player:IEventDispatcher;
 		private var media:Object 
+		private var total:Number = 0;
+
+		private var bb:ButtomBar;
 		
 		public function Blibli()
 		{
@@ -39,6 +48,10 @@ package
 		
 		protected function onAdded(event:Event):void
 		{
+			var stus:TextField = new TextField();
+			stus.autoSize="left";
+			stus.textColor = 0xFFFFFF;
+			
 			try
 			{
 				Log.level =4;
@@ -66,7 +79,7 @@ package
 					{
 						url+=a.join("&");
 					}else{
-						url+="cid=4052899&aid=2594889"
+						url+="cid=4062746&aid=2600384"
 					}
 				}
 				//url+="cid=1402514&aid=970200"
@@ -111,18 +124,54 @@ package
 						const DEFAULT:String = "default";
 						const _4_3:String = "4:3";
 						config.stretching = EXACTFIT;
-						video.opaqueBackground = 0xFF0000;
+						//video.opaqueBackground = 0xFF0000;
 						Log.info("播放器：",media.provider);
+						var ready:Boolean = true;
+						
+						var onReady:Function = function():void
+						{
+							Log.info("获取视频成功:",flash.utils.getQualifiedClassName(video));
+							try{
+								//video.opaqueBackground = 0x00FF00;
+								vBox.addChild(video);
+								player.addEventListener("jwplayerPlayerState",onjwplayerPlayerState);
+								player.addEventListener("jwplayerMediaTime",ontimeUpdate);
+								Log.info("getTime：",player,video,media);
+								stus.visible = false;
+								bb.visible = true;
+								media["play"]();
+								media["resize"](stage.stageWidth,stage.stageHeight - ButtomBar.BUTTON_H);
+							}catch(eo:Error){
+								Log.error("播放错误：",eo.getStackTrace());
+							}
+						}
 						if(media.provider=="letv-swf")
 						{
-							video = video.parent.parent.parent.parent.parent.parent["player"];
+							ready = false;
+							var has:Boolean = loader.contentLoaderInfo.applicationDomain.hasDefinition("org.lala.event.EventBus");
+							if(has)
+							{
+								var eventcls:Object = loader.contentLoaderInfo.applicationDomain.getDefinition("org.lala.event.EventBus");
+								var ev:Object = eventcls["getInstance"]();
+								ev.addEventListener("adSwitch",function(ec:Event):void
+								{
+									if(ec["data"].isAd!=false)
+									{
+										return;
+									}
+									var has:Boolean = loader.contentLoaderInfo.applicationDomain.hasDefinition("org.lala.plugins.CommentView");
+									if(has)
+									{
+										var cls:Object = loader.contentLoaderInfo.applicationDomain.getDefinition("org.lala.plugins.CommentView");
+										var cv:Object = cls["getInstance"]();
+										video = cv.clip.parent.getChildAt(0).getChildAt(1);
+										setTimeout(onReady,2000);
+									}
+								});
+							}
+						}else{
+							onReady();
 						}
-						stage.addChild(video);
-						media["play"]();
-						media["resize"](stage.stageWidth,stage.stageHeight);
-						player.addEventListener("jwplayerPlayerState",onjwplayerPlayerState);
-						player.addEventListener("jwplayerMediaTime",ontimeUpdate);
-						Log.info("getTime：",player,video,media);
 						return;
 					}
 					setTimeout(getTime,200);
@@ -138,21 +187,51 @@ package
 			}catch(er:Error){
 				Log.info(er);
 			}
+			var vBox:Sprite = new Sprite();
+			this.addChild(vBox);
+			bb = new ButtomBar();
+			bb.visible = false;
+			this.addChild(bb);
+			this.addChild(stus);
+			bb.addEventListener("toSeek",function():void
+			{
+				if(media)
+				{
+					media.seek(total*bb.progress);
+				}
+			});
+
+			stus.text="加载...";
+			stus.x = stage.stageWidth - stus.width>>1;
+			stus.y = stage.stageHeight - stus.height>>1;
+			stage.addEventListener(Event.RESIZE,function():void
+			{
+				bb.resize();
+				media&&media["resize"](stage.stageWidth,stage.stageHeight - ButtomBar.BUTTON_H);
+				stus.x = stage.stageWidth - stus.width>>1;
+				stus.y = stage.stageHeight - stus.height>>1;
+			});
+			var m:Monitor = new Monitor();
+			//m.opaqueBackground = 0x0000FF;
+			this.addChild(m);
+			this.contextMenu = new ContextMenu();
+			this.contextMenu.hideBuiltInItems();
+			this.contextMenu.customItems = [new ContextMenuItem("ACFUN_SUPER",false,false)];
 		}
 		
 		private function ontimeUpdate(e:Event):void
 		{
 			Log.info("当前播放时间：",e["position"]);
 			callJS("timeUpdate",{"position":e["position"],"duration":e["duration"]});
+			total = e["duration"];
+			bb.progress = e["position"]/e["duration"];
+			bb.setCT(e["position"],e["duration"]);
 		}
 		
 		private function onjwplayerPlayerState(e:Event):void
 		{
 			Log.info("当前播放:",e["newstate"]);
 			callJS("playStatus",e["newstate"]);
-			try{
-				//media["resize"](stage.stageWidth,stage.stageHeight);
-			}catch(er:Error){}
 		}
 		
 		private function callJS(name:String,args:* = null):void
