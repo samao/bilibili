@@ -14,6 +14,7 @@ package
 	import flash.display.StageDisplayState;
 	import flash.events.Event;
 	import flash.events.MouseEvent;
+	import flash.external.ExternalInterface;
 	import flash.text.TextField;
 	import flash.text.TextFormat;
 	
@@ -29,6 +30,8 @@ package
 		private var _timeTxt:TextField;
 		
 		private var _proBglayer:Sprite;
+
+		private var webFullBut:TextField;
 		
 		public function ButtomBar()
 		{
@@ -47,6 +50,13 @@ package
 			fullBut.autoSize = "left";
 			fullBut.text = "FULL";
 			addChild(fullBut);
+			
+			webFullBut = new TextField();
+			webFullBut.selectable = false;
+			webFullBut.defaultTextFormat = new TextFormat("微软雅黑,宋体",12,0xffffff,true);
+			webFullBut.autoSize = "left";
+			webFullBut.text = "WebFULL";
+			addChild(webFullBut);
 			
 			_timeTxt ||= new TextField();
 			_timeTxt.mouseEnabled = false;
@@ -78,6 +88,26 @@ package
 				}
 				fullBut.x = stage.stageWidth - fullBut.width - 5;
 				fullBut.y = BUTTON_H - fullBut.height>>1;
+				webFullBut.x = fullBut.x - webFullBut.width - 5;
+				webFullBut.y = fullBut.y;
+			});
+			
+			webFullBut.addEventListener(MouseEvent.CLICK,function():void
+			{
+				if(webFullBut.text == "WebFULL")
+				{
+					if(ExternalInterface.available)
+					{
+						ExternalInterface.call("function(){window.top.fullScreen = true;}")
+					}
+					webFullBut.text = "WebNorm";
+				}else{
+					if(ExternalInterface.available)
+					{
+						ExternalInterface.call("function(){window.top.fullScreen = false;}")
+					}
+					webFullBut.text = "WebFULL";
+				}
 			});
 			
 			resize();
@@ -135,6 +165,8 @@ package
 		{
 			fullBut.x = stage.stageWidth - fullBut.width - 5;
 			fullBut.y = BUTTON_H - fullBut.height>>1;
+			webFullBut.x = fullBut.x - webFullBut.width - 5;
+			webFullBut.y = fullBut.y;
 			_proBglayer.width = stage.stageWidth;
 			y = stage.stageHeight - BUTTON_H;
 		}
